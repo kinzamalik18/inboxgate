@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "macros.html" import time %}
+{% set active = "leads" %}
+{% block title %}Leads{% endblock %}
+{% block content %}
+<h1>Leads in CRM</h1>
+<p class="lede">Leads are added here once someone approves the reply, so the CRM only holds people we actually answered. Highest score first.</p>
+{% if leads %}
+<table>
+  <thead><tr><th>Score</th><th>Contact</th><th>Wants</th><th>Budget</th><th>Timeline</th><th>Added</th></tr></thead>
+  <tbody>
+  {% for l in leads %}
+    <tr>
+      <td class="num">{{ l.score }}</td>
+      <td><a href="/tickets/{{ l.ticket_id }}">{{ l.name or l.email }}</a>{% if l.company %}<br><span class="summary">{{ l.company }}</span>{% endif %}</td>
+      <td>{{ l.services | join(", ") or "Not stated" }}</td>
+      <td>{{ l.budget or "Not stated" }}</td>
+      <td>{{ l.timeline or "Not stated" }}</td>
+      <td>{{ time(l.created_at) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">No leads yet. Approve a reply to a lead email and it shows up here.</p>
+{% endif %}
+{% endblock %}

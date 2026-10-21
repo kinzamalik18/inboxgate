@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "macros.html" import category_label, time %}
+{% set active = view %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% if view == "review" %}
+<p class="lede">The AI has sorted these emails and drafted replies. Nothing is sent until someone here approves it. Urgent emails come first.</p>
+{% elif view == "archived" %}
+<p class="lede">Spam the AI was confident about. These skipped review. If one shouldn't be here, the confidence threshold can be raised.</p>
+{% endif %}
+
+{% if tickets %}
+<ul class="mail-list">
+  {% for t in tickets %}
+  <li>
+    <a href="/tickets/{{ t.id }}">
+      <span class="sender">{{ t.from_name or t.from_email }}</span>
+      <span>
+        <span class="subject">{{ t.subject or "(no subject)" }}</span>
+        <span class="summary">{{ t.summary }}</span>
+      </span>
+      <span class="tags">
+        {% if t.urgency == "high" %}<span class="tag urgent">Urgent</span>{% endif %}
+        <span class="tag">{{ category_label(t.category) }}</span>
+        {% if t.lead %}<span class="tag score">Score {{ t.lead.score }}</span>{% endif %}
+        <span class="tag">{{ time(t.received_at) }}</span>
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">
+  {% if view == "review" %}Nothing waiting. Send a sample email below to watch the workflow run.{% else %}Nothing here yet.{% endif %}
+</p>
+{% endif %}
+
+{% if view == "review" %}
+<section class="simulate" aria-labelledby="simulate-title">
+  <h2 id="simulate-title">Send a test email</h2>
+  <p class="lede">Pick a sample, or write your own. It goes through the same workflow as real mail would.</p>
+  <form method="post" action="/simulate" class="sample-grid">
+    {% for s in samples %}
+    <button name="sample_id" value="{{ s.id }}" type="submit">{{ s.subject }}</button>
+    {% endfor %}
+  </form>
+  <details>
+    <summary>Write your own email</summary>
+    <form method="post" action="/simulate" style="max-width: 40rem; margin-top: 1rem;">
+      <label class="field"><span>Your name</span><input type="text" name="from_name" maxlength="200"></label>
+      <label class="field"><span>Your email</span><input type="email" name="from_email" maxlength="320" placeholder="you@example.com"></label>
+      <label class="field"><span>Subject</span><input type="text" name="subject" maxlength="500"></label>
+      <label class="field"><span>Message</span><textarea name="body" rows="6" maxlength="20000" required></textarea></label>
+      <button class="button primary" type="submit">Send to the inbox</button>
+    </form>
+  </details>
+</section>
+{% endif %}
+{% endblock %}

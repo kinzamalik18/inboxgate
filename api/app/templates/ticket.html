@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "macros.html" import category_label, route_label, time %}
+{% set active = {"pending_review": "review", "approved": "sent", "sent": "sent", "archived": "archived", "rejected": "rejected"}.get(ticket.status) %}
+{% block title %}{{ ticket.subject or "Email" }}{% endblock %}
+{% block content %}
+<div class="ticket">
+  <article class="letter" aria-label="Original email">
+    <header class="letter-head">
+      <h1>{{ ticket.subject or "(no subject)" }}</h1>
+      <p>From {{ ticket.from_name }} &lt;{{ ticket.from_email }}&gt; · {{ time(ticket.received_at) }}</p>
+    </header>
+    <div class="letter-body">{{ ticket.body }}</div>
+  </article>
+
+  <div>
+    <section class="panel" aria-labelledby="triage-title">
+      <h2 id="triage-title">What the AI decided</h2>
+      <dl class="facts">
+        <dt>Type</dt><dd>{{ category_label(ticket.category) }}{% if ticket.urgency == "high" %} <span class="tag urgent">Urgent</span>{% endif %}</dd>
+        <dt>Goes to</dt><dd>{{ route_label(ticket.route_to) }}</dd>
+        <dt>Confidence</dt><dd>{{ "%.0f" | format(ticket.confidence * 100) }}%</dd>
+        <dt>Summary</dt><dd>{{ ticket.summary }}</dd>
+        {% if ticket.lead %}
+        <dt>Lead score</dt><dd><strong>{{ ticket.lead.score }}</strong> out of 100</dd>
+        {% if ticket.lead.company %}<dt>Company</dt><dd>{{ ticket.lead.company }}</dd>{% endif %}
+        {% if ticket.lead.services %}<dt>Wants</dt><dd>{{ ticket.lead.services | join(", ") }}</dd>{% endif %}
+        <dt>Budget</dt><dd>{{ ticket.lead.budget or "Not stated" }}</dd>
+        <dt>Timeline</dt><dd>{{ ticket.lead.timeline or "Not stated" }}</dd>
+        {% endif %}
+      </dl>
+      {% if ticket.lead and ticket.lead.score_reasons %}
+      <ul class="reasons">{% for r in ticket.lead.score_reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+      {% endif %}
+    </section>
+
+    <section class="panel" aria-labelledby="reply-title">
+      <h2 id="reply-title">Reply</h2>
+      {% if ticket.status == "pending_review" %}
+        {% if ticket.review_notes %}
+        <ul class="review-notes">{% for n in ticket.review_notes %}<li>{{ n }}</li>{% endfor %}</ul>
+        {% endif %}
+        <form method="post" action="/tickets/{{ ticket.id }}/approve">
+          <label class="field"><span>Draft. Edit anything before sending.</span>
+            <textarea name="reply" rows="12" required>{{ ticket.draft_reply }}</textarea>
+          </label>
+          <label class="field"><span>Note for the team (optional)</span><input type="text" name="note" maxlength="300"></label>
+          <div class="actions">
+            <button class="button primary" type="submit">Approve and send</button>
+            <button class="button quiet" type="submit" formaction="/tickets/{{ ticket.id }}/reject" formnovalidate>Don't reply</button>
+          </div>
+        </form>
+      {% elif ticket.status in ("approved", "sent") %}
+        <p class="decided">{% if ticket.status == "sent" %}Sent{% else %}Approved, waiting for the workflow to send{% endif %}:</p>
+        <p class="sent-body">{{ ticket.final_reply }}</p>
+      {% elif ticket.status == "archived" %}
+        <p class="decided">Archived as spam without review. No reply was drafted.</p>
+      {% else %}
+        <p class="decided">No reply sent.{% if ticket.reviewer_note %} Note: {{ ticket.reviewer_note }}{% endif %}</p>
+      {% endif %}
+    </section>
+
+    <section class="panel" aria-labelledby="trail-title">
+      <h2 id="trail-title">What happened</h2>
+      <ol class="timeline">
+        {% for e in events %}
+        <li>
+          <time datetime="{{ e.at.isoformat() }}">{{ e.at.strftime("%H:%M:%S") }}</time>
+          <span><span class="who">{{ {"ai": "AI", "workflow": "n8n", "reviewer": "Reviewer", "system": "App"}.get(e.actor, e.actor) }}:</span>
+            {{ e.action.replace("_", " ") | capitalize }}{% if e.detail %}. {{ e.detail }}{% endif %}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+</div>
+{% endblock %}

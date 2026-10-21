@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "macros.html" import time %}
+{% set active = "outbox" %}
+{% block title %}Outbox{% endblock %}
+{% block content %}
+<h1>Outbox</h1>
+<p class="lede">This demo doesn't send real email. Approved replies land here instead. In a real setup, the n8n workflow's send step is a Gmail or SMTP node.</p>
+{% if messages %}
+<table>
+  <thead><tr><th>To</th><th>Message</th><th>Sent by</th><th>When</th></tr></thead>
+  <tbody>
+  {% for m in messages %}
+    <tr>
+      <td>{{ m.to_email }}</td>
+      <td><a href="/tickets/{{ m.ticket_id }}"><strong>{{ m.subject }}</strong></a><p class="sent-body">{{ m.body }}</p></td>
+      <td>{{ "n8n workflow" if m.via == "n8n" else "App (n8n not used)" }}</td>
+      <td>{{ time(m.sent_at) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Nothing sent yet.</p>
+{% endif %}
+{% endblock %}
