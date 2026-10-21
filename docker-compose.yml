@@ -1,0 +1,56 @@
+# Runs the whole thing locally: Postgres, n8n and the InboxGate app.
+#   cp .env.example .env    (add GEMINI_API_KEY and a WORKFLOW_TOKEN)
+#   docker compose up
+# Then open n8n at http://localhost:5678, import n8n/inboxgate-workflow.json and activate it.
+# The review screens are at http://localhost:8000.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inboxgate
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./n8n/init-n8n-db.sql:/docker-entrypoint-initdb.d/init-n8n-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: postgres
+      DB_POSTGRESDB_PASSWORD: postgres
+      WEBHOOK_URL: http://n8n:5678/
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      INBOXGATE_API_URL: http://api:8000
+      INBOXGATE_TOKEN: ${WORKFLOW_TOKEN}
+      GENERIC_TIMEZONE: Europe/London
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/inboxgate
+      WORKFLOW_TOKEN: ${WORKFLOW_TOKEN}
+      N8N_INBOUND_URL: http://n8n:5678/webhook/inboxgate-inbound
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

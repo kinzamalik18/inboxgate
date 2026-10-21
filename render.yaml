@@ -1,0 +1,68 @@
+# Render blueprint: the InboxGate app and an n8n instance.
+# Both use one Supabase Postgres database: the app in the public schema,
+# n8n in its own "n8n" schema. Values marked sync: false are asked for at setup.
+services:
+  - type: web
+    name: inboxgate
+    runtime: docker
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_CHAT_MODEL
+        value: gemini-2.5-flash
+      - key: DATABASE_URL
+        sync: false
+      - key: WORKFLOW_TOKEN
+        sync: false
+      - key: N8N_INBOUND_URL
+        sync: false
+      - key: REVIEW_PASSWORD
+        sync: false
+
+  - type: web
+    name: inboxgate-n8n
+    runtime: image
+    image:
+      url: docker.io/n8nio/n8n:latest
+    plan: free
+    envVars:
+      - key: N8N_PORT
+        value: "10000"
+      - key: PORT
+        value: "10000"
+      - key: WEBHOOK_URL
+        sync: false
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
+        value: "false"
+      - key: INBOXGATE_API_URL
+        sync: false
+      - key: INBOXGATE_TOKEN
+        sync: false
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_SCHEMA
+        value: n8n
+      - key: DB_POSTGRESDB_HOST
+        sync: false
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        value: postgres
+      - key: DB_POSTGRESDB_USER
+        sync: false
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: "true"
+      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
+      - key: GENERIC_TIMEZONE
+        value: Europe/London
