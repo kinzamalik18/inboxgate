@@ -1,0 +1,740 @@
+{
+  "name": "InboxGate: triage, approve, send",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inboxgate-inbound",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "ecaf6fd4-1b2d-4e1b-9dfc-4e76e1bd4f28",
+      "name": "New email",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "404c9ad7-4568-4472-a70b-9d6193d4a545",
+      "notes": "Swap for a Gmail or IMAP trigger in a real setup",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "933c3ad7-2183-47b8-a282-ca1396e0d4ad",
+              "leftValue": "={{ $json.headers['x-workflow-token'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "4cd5ec6d-bba5-4162-87bd-532a15bac117",
+      "name": "From InboxGate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ce6f85a7-2663-439e-9397-e7e25c8de0a6",
+      "name": "Ignore",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/triage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "e002ad5c-2e51-4075-8d3b-a75abf71f4f9",
+      "name": "Triage with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        280
+      ],
+      "notes": "Classify, score, draft a reply",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "062b2498-e423-4757-9241-b11b37d524e1",
+              "leftValue": "={{ $json.needs_review }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "61cb7070-13f9-4e01-9411-4e216b5bbd17",
+      "name": "Needs review?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        280
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "eef0f941-f161-4a3c-a6a2-4c3fdcb2d9a6",
+      "name": "Archived as spam",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        880,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c7e00349-f427-4aab-90aa-251d99c21483",
+                    "leftValue": "={{ $json.route_to }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "sales"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5b53ba22-c1f0-41d6-b0e6-52a250ed5f0b",
+                    "leftValue": "={{ $json.route_to }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "support"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Support"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "05d25dab-0b76-426e-8e80-67c1702f12c7",
+                    "leftValue": "={{ $json.route_to }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "billing"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Billing"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Unrouted"
+        }
+      },
+      "id": "fdf0e02d-1fa3-4773-96fc-2db306e398bd",
+      "name": "Route to team",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: \"notified_sales\", detail: \"Posted to the sales channel (demo, no message sent)\" }) }}",
+        "options": {}
+      },
+      "id": "7e63cf6d-ceb2-456f-bc69-404f3bf12a38",
+      "name": "Notify Sales team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        80
+      ],
+      "notes": "Swap for a Slack or Teams node in a real setup",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: \"notified_support\", detail: \"Posted to the support channel (demo, no message sent)\" }) }}",
+        "options": {}
+      },
+      "id": "ef0247d3-b96c-4ed8-83ce-b581734a975d",
+      "name": "Notify Support team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        240
+      ],
+      "notes": "Swap for a Slack or Teams node in a real setup",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: \"notified_billing\", detail: \"Posted to the billing channel (demo, no message sent)\" }) }}",
+        "options": {}
+      },
+      "id": "82494ba3-3d03-46bb-8ce6-af3d1299d868",
+      "name": "Notify Billing team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        400
+      ],
+      "notes": "Swap for a Slack or Teams node in a real setup",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/waiting",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ resume_url: $execution.resumeUrl }) }}",
+        "options": {}
+      },
+      "id": "e3e216d1-de27-4a91-93f3-e6ab1ff0f077",
+      "name": "Hold for approval",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        260
+      ],
+      "notes": "Gives the review screen the link that resumes this run",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST",
+        "limitWaitTime": true,
+        "limitType": "afterTimeInterval",
+        "resumeAmount": 7,
+        "resumeUnit": "days",
+        "options": {}
+      },
+      "id": "b2c9a3a9-d3c7-4061-bccd-4f8f21cd13a6",
+      "name": "Wait for a person",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        260
+      ],
+      "webhookId": "042b1576-4822-42f0-8651-9df3be3885da",
+      "notes": "Paused until someone approves or rejects",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "af6d6268-64a7-4d13-abae-a29949a856fa",
+              "leftValue": "={{ $json.body.decision }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "approved"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "e68afaf1-a6f5-4d0f-8a79-7db30e43acc0",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {}
+      },
+      "id": "39411774-58a1-43b4-8f51-ab4ecfc7b0be",
+      "name": "Send reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        160
+      ],
+      "notes": "Demo outbox. Use a Gmail or SMTP node for real email",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "26687b84-6714-4916-8e7a-36d0697e0d8e",
+              "leftValue": "={{ $('Triage with AI').item.json.category }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "lead"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "513ca8ce-e3ef-491f-a816-3b4213e1d6e0",
+      "name": "Is it a lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2200,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {}
+      },
+      "id": "e673b3df-a96f-47ae-9d69-a2c1a0b6aac6",
+      "name": "Add to CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        80
+      ],
+      "notes": "Swap for a HubSpot, Pipedrive or Sheets node",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {},
+      "id": "f33c7400-d380-4d0d-9c50-f598d463330e",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INBOXGATE_API_URL }}/api/workflow/tickets/{{ $('Triage with AI').item.json.ticket_id }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Workflow-Token",
+              "value": "={{ $env.INBOXGATE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: \"workflow_closed\", detail: $json.body.decision === \"rejected\" ? \"Rejected by reviewer, nothing sent\" : \"No decision within 7 days, closed\" }) }}",
+        "options": {}
+      },
+      "id": "ae3202ac-28c0-4732-8162-84a20fc2aaa8",
+      "name": "Log rejection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "New email": {
+      "main": [
+        [
+          {
+            "node": "From InboxGate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From InboxGate?": {
+      "main": [
+        [
+          {
+            "node": "Triage with AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage with AI": {
+      "main": [
+        [
+          {
+            "node": "Needs review?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs review?": {
+      "main": [
+        [
+          {
+            "node": "Route to team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Archived as spam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to team": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Support team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Billing team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hold for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Sales team": {
+      "main": [
+        [
+          {
+            "node": "Hold for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Support team": {
+      "main": [
+        [
+          {
+            "node": "Hold for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Billing team": {
+      "main": [
+        [
+          {
+            "node": "Hold for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hold for approval": {
+      "main": [
+        [
+          {
+            "node": "Wait for a person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for a person": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reply": {
+      "main": [
+        [
+          {
+            "node": "Is it a lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it a lead?": {
+      "main": [
+        [
+          {
+            "node": "Add to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
