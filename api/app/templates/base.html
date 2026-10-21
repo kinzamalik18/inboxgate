@@ -17,8 +17,8 @@
       <span class="brand-note">Kestrel Studio's shared inbox. A fictional agency, for demo.</span>
     </div>
     <div class="status-line">
-      {% if n8n_connected %}<span class="dot on"></span>Running through n8n{% else %}<span class="dot off"></span>Running without n8n{% endif %}
-      · Model: {{ model }}
+      <span>{% if n8n_connected %}<span class="dot on"></span>Running through n8n{% else %}<span class="dot off"></span>Running without n8n{% endif %}</span>
+      <span class="status-model">Model: {{ model }}</span>
     </div>
   </header>
   <div class="layout">

@@ -78,7 +78,7 @@ class Database:
                 row["id"],
                 "ai",
                 "triaged",
-                f"{triage.category}, {triage.urgency} urgency, {triage.confidence:.0%} confidence, route to {triage.route_to}",
+                f"{triage.category.capitalize()}, {triage.urgency} urgency, {triage.confidence:.0%} confidence, route to {triage.route_to}",
             )
             if archive:
                 self._event(conn, row["id"], "system", "archived", "Spam with high confidence, no review needed")

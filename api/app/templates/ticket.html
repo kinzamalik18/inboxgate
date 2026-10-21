@@ -7,7 +7,8 @@
   <article class="letter" aria-label="Original email">
     <header class="letter-head">
       <h1>{{ ticket.subject or "(no subject)" }}</h1>
-      <p>From {{ ticket.from_name }} &lt;{{ ticket.from_email }}&gt; · {{ time(ticket.received_at) }}</p>
+      <p>From {{ ticket.from_name }} &lt;{{ ticket.from_email }}&gt;</p>
+      <p>Received {{ time(ticket.received_at) }}</p>
     </header>
     <div class="letter-body">{{ ticket.body }}</div>
   </article>
