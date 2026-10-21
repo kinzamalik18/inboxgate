@@ -28,7 +28,7 @@ class FakeTriageProvider:
         urgent = any(w in text for w in ["urgent", "asap", "down"])
         lead = None
         if category == "lead":
-            budget = re.search(r"\$[\d,]+(?:\s*(?:to|-)\s*\$?[\d,]+)?", text)
+            budget = re.search(r"\$\d[\d,]*\d(?:\s*(?:to|-)\s*\$?\d[\d,]*\d)?", text)
             lead = {
                 "company": None,
                 "services": [],
