@@ -39,7 +39,7 @@ flowchart LR
     P -- no --> LOG[Log rejection]
 ```
 
-The workflow file is `n8n/inboxgate-workflow.json`. It was tested end to end on n8n 2.44: approve, reject, auto-archived spam, and a request with the wrong token.
+The workflow file is `n8n/inboxgate-workflow.json`. It was tested end to end on n8n 2.44.5: approve, reject, auto-archived spam, and a request with the wrong token.
 
 ## How the pieces split
 
@@ -101,13 +101,14 @@ Tests need a Postgres database: set `TEST_DATABASE_URL` and run `pytest` from `a
 
 ## Deploy
 
-`render.yaml` defines two services: the app and n8n. Both use one Supabase Postgres database, with n8n in its own schema.
+`render.yaml` defines two services, the app and n8n, sharing one Supabase database: the app in the `public` schema, n8n in an `n8n` schema.
 
-1. Create a Supabase project and note the connection details (Session pooler).
-2. In Render, create a Blueprint from this repo and fill in the values it asks for:
-   - App: `GEMINI_API_KEY`, `DATABASE_URL`, `WORKFLOW_TOKEN`, and `N8N_INBOUND_URL` (the n8n service URL plus `/webhook/inboxgate-inbound`).
-   - n8n: the Supabase host, user and password, `WEBHOOK_URL` (its own public URL), `INBOXGATE_API_URL` (the app's URL), and `INBOXGATE_TOKEN` (the same value as `WORKFLOW_TOKEN`).
-3. Open n8n, create the owner account, import the workflow and publish it.
+1. Create a Supabase project and run `create schema if not exists n8n;` in its SQL editor. Note the Session pooler host and user.
+2. In Render, create two environment groups. `gemini` holds `GEMINI_API_KEY`. `supabase` holds `DATABASE_URL` (pooler URL without the password, ending in `?sslmode=require`), `PGPASSWORD`, `DB_POSTGRESDB_HOST`, `DB_POSTGRESDB_USER` and `DB_POSTGRESDB_PASSWORD`.
+3. Create a Blueprint from this repo. The token linking the app and n8n is generated and shared automatically.
+4. Set `N8N_INBOUND_URL` on the app to the n8n URL plus `/webhook/inboxgate-inbound`, and `INBOXGATE_API_URL` on n8n to the app's URL.
+
+The n8n image in `n8n/` imports and publishes the workflow on every start, so a fresh instance runs it without anyone opening the editor. To look at the workflow in the n8n editor, open the n8n URL and create an owner account.
 
 Render's free tier sleeps after 15 minutes without traffic, so the first email after a quiet spell can take up to a minute.
 
