@@ -8,7 +8,17 @@ The demo runs on the inbox of **Kestrel Studio, a fictional web agency**. The ag
 
 - Live demo: _link added after deployment_
 
+![The InboxGate review screen: the original email, what the AI decided, the approved reply, and the audit trail showing n8n pausing for review, then sending and adding the lead to the CRM](docs/screenshots/approved-ticket.png)
+
+![Inbox of emails waiting for review, urgent ones first, each tagged with its category and lead score](docs/screenshots/inbox.png)
+
+<sub>Local run through real n8n 2.44, using the offline keyword model instead of Gemini, so the AI summaries read "classified by keyword rules". The reply in the first screenshot was written by the reviewer during the test. Screenshots with real Gemini triage will replace these after deployment.</sub>
+
 ## The workflow
+
+![The InboxGate workflow in the n8n editor](docs/screenshots/n8n-workflow.png)
+
+The same flow as a diagram:
 
 ```mermaid
 flowchart LR
