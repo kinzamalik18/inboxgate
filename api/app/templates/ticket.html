@@ -2,6 +2,7 @@
 {% from "macros.html" import category_label, route_label, time %}
 {% set active = {"pending_review": "review", "approved": "sent", "sent": "sent", "archived": "archived", "rejected": "rejected"}.get(ticket.status) %}
 {% block title %}{{ ticket.subject or "Email" }}{% endblock %}
+{% set action_labels = {"received": "Received", "triaged": "Triaged", "archived": "Archived", "notified_sales": "Notified sales", "notified_support": "Notified support", "notified_billing": "Notified billing", "waiting_for_review": "Waiting for review", "approved": "Approved", "rejected": "Rejected", "sent": "Sent", "added_to_crm": "Added to CRM", "workflow_closed": "Workflow closed", "workflow_unreachable": "n8n unreachable"} %}
 {% block content %}
 <div class="ticket">
   <article class="letter" aria-label="Original email">
@@ -67,7 +68,7 @@
         <li>
           <time datetime="{{ e.at.isoformat() }}">{{ e.at.strftime("%H:%M:%S") }}</time>
           <span><span class="who">{{ {"ai": "AI", "workflow": "n8n", "reviewer": "Reviewer", "system": "App"}.get(e.actor, e.actor) }}:</span>
-            {{ e.action.replace("_", " ") | capitalize }}{% if e.detail %}. {{ e.detail }}{% endif %}</span>
+            {{ action_labels.get(e.action, e.action.replace("_", " ") | capitalize) }}{% if e.detail %}. {{ e.detail }}{% endif %}</span>
         </li>
         {% endfor %}
       </ol>
