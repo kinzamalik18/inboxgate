@@ -6,7 +6,7 @@ Each new email is classified (lead, support, billing, partnership, spam or other
 
 The demo runs on the inbox of **Kestrel Studio, a fictional web agency**. The agency, its prices and the sample emails are made up.
 
-- Live demo: _link added after deployment_
+- Live demo: https://inboxgate.onrender.com (free hosting that sleeps when idle, so the first load can take up to a minute)
 
 ![The InboxGate review screen: the original email, what the AI decided, the approved reply, and the audit trail showing n8n pausing for review, then sending and adding the lead to the CRM](docs/screenshots/approved-ticket.png)
 
