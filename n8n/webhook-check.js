@@ -13,8 +13,9 @@
 
 const [url, pidArg] = process.argv.slice(2);
 const n8nPid = Number(pidArg);
-const STARTUP_LIMIT_MS = 5 * 60 * 1000;
-const STARTUP_GRACE_FAILURES = 12; // 5 s apart: n8n opens its port before activating workflows
+// n8n opens its port minutes before it finishes activating workflows on a
+// small instance, so startup gets a long allowance before a 404 counts.
+const STARTUP_LIMIT_MS = 10 * 60 * 1000;
 const CHECK_EVERY_MS = 60 * 1000;
 const FAILURES_BEFORE_RESTART = 3;
 
@@ -44,11 +45,8 @@ async function registered() {
 
 async function waitForStartup() {
   const deadline = Date.now() + STARTUP_LIMIT_MS;
-  let failures = 0;
   while (Date.now() < deadline && n8nRunning()) {
-    const state = await registered();
-    if (state === "yes") return true;
-    if (state === "no" && ++failures >= STARTUP_GRACE_FAILURES) return false;
+    if ((await registered()) === "yes") return true;
     await sleep(5000);
   }
   return !n8nRunning() ? null : false;
