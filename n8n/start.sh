@@ -7,24 +7,22 @@ if [ -z "$WEBHOOK_URL" ] && [ -n "$RENDER_EXTERNAL_URL" ]; then
   export WEBHOOK_URL="$RENDER_EXTERNAL_URL/"
 fi
 
-# The setup below runs three n8n CLI commands, and on a small instance each one
-# takes close to a minute to boot. Hosts like Render fail a deploy when no port
-# opens in time, so answer on the port with a "starting" page until n8n is ready.
-node -e '
-require("http").createServer((req, res) => {
-  res.writeHead(503, { "Content-Type": "text/plain", "Retry-After": "30" });
-  res.end("n8n is starting. Try again in a minute.\n");
-}).listen(process.env.N8N_PORT, "0.0.0.0");
-' &
-PLACEHOLDER_PID=$!
+WORKFLOW=/home/node/workflows/inboxgate-workflow.json
+HASH=$(sha256sum "$WORKFLOW" | cut -d' ' -f1)
 
-# Re-import on every start so the deployed workflow always matches the repo.
-# A live workflow can't be overwritten, so unpublish it first (fails harmlessly
-# on the very first boot, when it doesn't exist yet).
-n8n unpublish:workflow --id=InboxGateFlow001 || true
-n8n import:workflow --input=/home/node/workflows/inboxgate-workflow.json
-n8n publish:workflow --id=InboxGateFlow001
+# Each n8n CLI command takes close to a minute to boot on a small instance, so
+# only import and publish when this version of the workflow isn't live yet.
+# Free hosting restarts the container after every idle spell, and skipping the
+# setup cuts those cold starts from about four minutes to one.
+if node /home/node/deploy-marker.js check "$HASH"; then
+  echo "Workflow already published at this version, starting n8n."
+else
+  # A live workflow can't be overwritten, so unpublish it first (fails
+  # harmlessly on the very first boot, when it doesn't exist yet).
+  n8n unpublish:workflow --id=InboxGateFlow001 || true
+  n8n import:workflow --input="$WORKFLOW"
+  n8n publish:workflow --id=InboxGateFlow001
+  node /home/node/deploy-marker.js mark "$HASH" || echo "Could not record the workflow version; setup will run again next start."
+fi
 
-kill "$PLACEHOLDER_PID" 2>/dev/null || true
-wait "$PLACEHOLDER_PID" 2>/dev/null || true
 exec n8n start
