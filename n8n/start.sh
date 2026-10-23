@@ -25,4 +25,19 @@ else
   node /home/node/deploy-marker.js mark "$HASH" || echo "Could not record the workflow version; setup will run again next start."
 fi
 
-exec n8n start
+n8n start &
+N8N_PID=$!
+trap 'kill -TERM "$N8N_PID" 2>/dev/null' TERM INT
+
+# n8n unpublishes the workflow if activating it fails (a database timeout is
+# enough), and the webhook then answers 404 until someone republishes it.
+# Watch the webhook, and if it goes missing, stop so the host restarts the
+# instance; the next start sees it unpublished and publishes it again.
+if ! node /home/node/webhook-check.js "http://127.0.0.1:$N8N_PORT/webhook/inboxgate-inbound" "$N8N_PID"; then
+  echo "Webhook is not registered, stopping n8n so the instance restarts."
+  kill -TERM "$N8N_PID" 2>/dev/null || true
+  wait "$N8N_PID" 2>/dev/null || true
+  exit 1
+fi
+
+wait "$N8N_PID"

@@ -5,7 +5,7 @@
 FROM n8nio/n8n:2.44.5
 
 COPY --chown=node:node inboxgate-workflow.json /home/node/workflows/inboxgate-workflow.json
-COPY --chown=node:node deploy-marker.js /home/node/deploy-marker.js
+COPY --chown=node:node deploy-marker.js webhook-check.js /home/node/
 COPY --chown=node:node start.sh /home/node/start.sh
 
 ENTRYPOINT ["tini", "--", "sh", "/home/node/start.sh"]

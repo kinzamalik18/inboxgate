@@ -108,7 +108,7 @@ Tests need a Postgres database: set `TEST_DATABASE_URL` and run `pytest` from `a
 3. Create a Blueprint from this repo. The token linking the app and n8n is generated and shared automatically.
 4. Set `N8N_INBOUND_URL` on the app to the n8n URL plus `/webhook/inboxgate-inbound`, and `INBOXGATE_API_URL` on n8n to the app's URL.
 
-The n8n image in `n8n/` imports and publishes the workflow whenever the deployed version doesn't match the repo, so a fresh instance runs it without anyone opening the editor. It records the version it published in the database, so ordinary restarts skip that step and start in about a minute. To look at the workflow in the n8n editor, open the n8n URL and create an owner account.
+The n8n image in `n8n/` imports and publishes the workflow whenever the deployed version doesn't match the repo, so a fresh instance runs it without anyone opening the editor. It records the version it published in the database, so ordinary restarts skip that step and start in about a minute. n8n unpublishes a workflow if activating it fails (a database timeout is enough), so a small watchdog checks the webhook every minute and restarts n8n if it goes missing; the restart publishes it again. Emails sent in the meantime are triaged by the app directly, and the audit trail says so. To look at the workflow in the n8n editor, open the n8n URL and create an owner account.
 
 Render's free tier sleeps after 15 minutes without traffic, so the first email after a quiet spell can take up to a minute.
 
