@@ -18,7 +18,7 @@ from app.db import Database, InvalidTransition, TicketNotFound
 from app.llm import get_provider
 from app.samples import load_samples
 from app.triage import InboundEmail, triage_email
-from app.workflow import resume_after_review, send_to_n8n
+from app.workflow import describe_failure, resume_after_review, send_to_n8n
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("inboxgate")
@@ -269,7 +269,7 @@ def simulate(
         except httpx.HTTPError as exc:
             log.warning("n8n inbound webhook failed: %s", exc)
             ticket = triage_and_store(request, email)
-            request.app.state.db.log_event(ticket["id"], "system", "workflow_unreachable", "n8n didn't respond, triaged by the app instead")
+            request.app.state.db.log_event(ticket["id"], "system", "workflow_unreachable", f"n8n didn't respond ({describe_failure(exc)}), triaged by the app instead")
             return RedirectResponse(f"/tickets/{ticket['id']}", status_code=303)
         return RedirectResponse("/inbox?notice=Email handed to the n8n workflow. Refresh in a few seconds.", status_code=303)
 

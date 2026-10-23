@@ -69,8 +69,18 @@ def test_unreachable_n8n_falls_back_to_direct_send(client, monkeypatch):
     monkeypatch.setattr("app.workflow.httpx.post", boom)
     client.post(f"/tickets/{ticket_id}/approve", data={"reply": "Hi"})
     page = client.get(f"/tickets/{ticket_id}").text
-    assert "n8n didn&#39;t respond" in page or "n8n didn't respond" in page
+    assert "n8n didn&#39;t respond (ConnectError)" in page or "n8n didn't respond (ConnectError)" in page
     assert client.post(f"/api/workflow/tickets/{ticket_id}/sent", headers=TOKEN).json() == {"status": "sent"}
+
+
+def test_failure_reasons_are_short_and_specific():
+    from app.workflow import describe_failure
+
+    request = httpx.Request("POST", "http://n8n/webhook")
+    not_found = httpx.HTTPStatusError("nope", request=request, response=httpx.Response(404, request=request))
+    assert describe_failure(not_found) == "HTTP 404"
+    assert describe_failure(httpx.ReadTimeout("slow", request=request)) == "timed out"
+    assert describe_failure(httpx.ConnectError("down", request=request)) == "ConnectError"
 
 
 def test_direct_mode_simulate_and_approve(client):

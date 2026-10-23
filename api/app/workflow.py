@@ -17,6 +17,15 @@ from app.db import Database
 log = logging.getLogger(__name__)
 
 
+def describe_failure(exc: httpx.HTTPError) -> str:
+    """A short reason for the audit trail, like "HTTP 404" or "timed out"."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"HTTP {exc.response.status_code}"
+    if isinstance(exc, httpx.TimeoutException):
+        return "timed out"
+    return type(exc).__name__
+
+
 def send_to_n8n(url: str, email: dict, token: str) -> None:
     response = httpx.post(url, json=email, headers={"X-Workflow-Token": token}, timeout=15)
     response.raise_for_status()
@@ -38,7 +47,7 @@ def resume_after_review(db: Database, ticket: dict, decision: str) -> str:
             return "n8n"
         except httpx.HTTPError as exc:
             log.warning("Could not resume n8n for ticket %s: %s", ticket["id"], exc)
-            db.log_event(ticket["id"], "system", "workflow_unreachable", "n8n didn't respond, finished by the app instead")
+            db.log_event(ticket["id"], "system", "workflow_unreachable", f"n8n didn't respond ({describe_failure(exc)}), finished by the app instead")
 
     if decision == "approved":
         finish_directly(db, ticket["id"])
