@@ -95,6 +95,15 @@ def test_direct_mode_simulate_and_approve(client):
     assert "We&#39;re on it." in client.get("/outbox").text
 
 
+def test_untouched_draft_is_not_logged_as_edited(client, db):
+    ticket_id = client.post("/api/workflow/triage", json=EMAIL, headers=TOKEN).json()["ticket_id"]
+    draft = db.get_ticket(ticket_id)["draft_reply"]
+    # Browsers send textarea text with \r\n line breaks.
+    client.post(f"/tickets/{ticket_id}/approve", data={"reply": draft.replace("\n", "\r\n")})
+    details = [e["detail"] for e in db.events(ticket_id) if e["action"] == "approved"]
+    assert details == ["Draft approved as written"]
+
+
 def test_reject_sends_nothing(client):
     ticket_id = client.post("/api/workflow/triage", json=EMAIL, headers=TOKEN).json()["ticket_id"]
     client.post(f"/tickets/{ticket_id}/reject", data={"note": "Not a fit"})

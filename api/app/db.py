@@ -113,6 +113,9 @@ class Database:
     def approve(self, ticket_id: int, final_reply: str, note: str = "") -> dict:
         if not final_reply.strip():
             raise InvalidTransition("The reply is empty")
+        # Browsers submit textarea text with \r\n line breaks; store it the way
+        # the draft was written so an untouched draft isn't logged as edited.
+        final_reply = final_reply.replace("\r\n", "\n")
         return self._review(ticket_id, "approved", final_reply, note)
 
     def reject(self, ticket_id: int, note: str = "") -> dict:
